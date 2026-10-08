@@ -57,18 +57,18 @@ function platformAssets(platform, tag, options = {}) {
   const relinkerName = platform === 'win32' ? `relinker-${tag}.exe` : `relinker-${tag}`;
   const relinker = options.relinker ?? Buffer.concat([FIXTURE_RELINKER, Buffer.from(`// ${tag}\n`)]);
   const prx = options.prx ?? makeLibsArchive({ 'libSceTest.prx': `libs-${tag}` });
-  return {
-    [relinkerName]: relinker,
-    [`prx-${target}-${tag}.tar.gz`]: prx,
-  };
+  const assets = {};
+  if (!options.omitRelinker) assets[relinkerName] = relinker;
+  if (!options.omitPrx) assets[`prx-${target}-${tag}.tar.gz`] = prx;
+  return assets;
 }
 
 async function startReleaseServer({ platform = process.platform, apiDigest = true } = {}) {
-  const state = { tag: 'v1.0.0', assets: {}, apiFails: false, downloadsFail: false, corruptDigest: false, hits: [] };
+  const state = { tag: 'v1.0.0', order: ['v1.0.0'], assets: {}, apiFails: false, downloadsFail: false, corruptDigest: false, hits: [] };
   state.assets[state.tag] = platformAssets(platform, state.tag);
   const server = http.createServer((request, response) => {
     state.hits.push(`${request.method} ${request.url}`);
-    const api = /^\/repos\/boykopovar\/AnyPS5\/releases\/latest$/.exec(request.url);
+    const api = /^\/repos\/boykopovar\/AnyPS5\/releases\?per_page=\d+$/.exec(request.url);
     const latest = /^\/boykopovar\/AnyPS5\/releases\/latest$/.exec(request.url);
     const download = /^\/boykopovar\/AnyPS5\/releases\/download\/([^/]+)\/([^/]+)$/.exec(request.url);
     if (api) {
@@ -77,15 +77,16 @@ async function startReleaseServer({ platform = process.platform, apiDigest = tru
         response.end('{"message":"rate limited"}');
         return;
       }
-      const assets = state.assets[state.tag];
-      const body = {
-        tag_name: state.tag,
-        assets: Object.entries(assets).map(([name, data]) => ({
+      const body = state.order.map((tag) => ({
+        tag_name: tag,
+        draft: false,
+        prerelease: Boolean(state.prereleases?.has(tag)),
+        assets: Object.entries(state.assets[tag]).map(([name, data]) => ({
           name,
           size: data.length,
           ...(apiDigest ? { digest: `sha256:${state.corruptDigest ? '0'.repeat(64) : sha256(data)}` } : {}),
         })),
-      };
+      }));
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end(JSON.stringify(body));
       return;
@@ -116,7 +117,9 @@ async function startReleaseServer({ platform = process.platform, apiDigest = tru
     base,
     publish(tag, options) {
       state.assets[tag] = platformAssets(platform, tag, options);
+      state.order = [tag, ...state.order.filter((item) => item !== tag)];
       state.tag = tag;
+      if (options?.prerelease) (state.prereleases ??= new Set()).add(tag);
     },
     close: () => new Promise((resolve) => server.close(resolve)),
   };

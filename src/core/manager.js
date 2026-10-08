@@ -47,7 +47,7 @@ class LauncherCore extends EventEmitter {
     try {
       const result = await this.updater.ensure({ autoUpdate: this.settings.get().autoUpdate });
       this.runtime = result.runtime;
-      this.publishRuntime({ phase: 'done', status: result.status, tag: result.runtime.tag, previous: result.previous, error: result.error });
+      this.publishRuntime({ phase: 'done', status: result.status, tag: result.runtime.tag, previous: result.previous, error: result.error, note: result.note });
     } catch (error) {
       this.runtime = await this.updater.installed();
       this.publishRuntime({ phase: 'error', error: error.message });

@@ -67,6 +67,7 @@ function runtimeEvent(event) {
       const [key, kind] = map[event.status] ?? map.current;
       setRuntime(t(key, { tag: event.tag }), kind);
       if (event.error) appendLog({ source: 'launcher', line: event.error });
+      if (event.note) appendLog({ source: 'launcher', line: event.note });
       scan();
       break;
     }

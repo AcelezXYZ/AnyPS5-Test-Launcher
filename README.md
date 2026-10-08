@@ -6,7 +6,7 @@ A small desktop app (Electron) that gives [AnyPS5](https://github.com/boykopovar
 
 The launcher does the manual steps from the AnyPS5 [usage guide](https://github.com/boykopovar/AnyPS5/blob/main/docs/user/USAGE.md) for you:
 
-1. **Always the newest AnyPS5.** On every start it asks GitHub for the latest release of `boykopovar/AnyPS5`, downloads `relinker-<tag>[.exe]` and `prx-<linux|windows>-<tag>.tar.gz` when the installed build is older, verifies size and SHA-256 (when GitHub provides it) and switches over atomically. The previous build is kept; if the download fails or you are offline the installed build is used.
+1. **Always the newest AnyPS5.** On every start it asks GitHub for the newest published release of `boykopovar/AnyPS5` that contains the files for your OS (a newer release without them is skipped and mentioned in the log), downloads `relinker-<tag>[.exe]` and `prx-<linux|windows>-<tag>.tar.gz` when the installed build is older, verifies size and SHA-256 (when GitHub provides it) and switches over atomically. The previous build is kept; if the download fails or you are offline the installed build is used.
 2. **Library.** Add folders that contain your game dumps. Every sub-folder with an ELF executable (and optionally `sce_sys/param.json` / `sce_sys/icon0.png` for title and cover) becomes a card.
 3. **Convert once, then play.** On the first Play the launcher runs the relinker, copies the system libraries to `libs/`, and puts the game files into `app0/`. The result is cached per game and rebuilt automatically when the game files, the settings or the AnyPS5 release change.
 4. **Start with a log.** The game runs with its output in the log panel; you can pick the GPU (`ANYPS5_GPU`), stop the game, rebuild or open the folders.
@@ -62,7 +62,7 @@ Data (settings, downloaded AnyPS5 builds, converted games) lives in the Electron
 
 ## What is verified and what is not
 
-Verified by automated tests (`npm test`, 46 tests, plus a mutation check of the key ones): release asset names against AnyPS5's `release.yml` and `tools/package_release.py`; download, checksum failure, rollback, offline and API-fallback behaviour against a local fake release server; the tar reader against an archive written by Python `tarfile` like the real packager; scanning; conversion cache invalidation; relinker error reporting; the GPU environment variable; stopping a game. The relinker output layout (`app0/sce_module/<name>.guest.prx` next to the output file) was measured with a real AnyPS5 relinker build.
+Verified by automated tests (`npm test`, 51 tests, plus a mutation check of the key ones): release asset names against AnyPS5's `release.yml` and `tools/package_release.py`; download, checksum failure, rollback, offline and API-fallback behaviour against a local fake release server; the tar reader against an archive written by Python `tarfile` like the real packager; scanning; conversion cache invalidation; relinker error reporting; the GPU environment variable; stopping a game. The relinker output layout (`app0/sce_module/<name>.guest.prx` next to the output file) was measured with a real AnyPS5 relinker build.
 
 Not verified:
 

@@ -149,3 +149,55 @@ test('reports download progress', async (t) => {
   assert.ok(events.some((event) => event.phase === 'downloading' && event.received > 0));
   assert.ok(events.some((event) => event.phase === 'updated'));
 });
+
+test('a newer release without the relinker for this platform is skipped in favour of the newest complete one', async (t) => {
+  const { server, updater } = await setup();
+  t.after(() => server.close());
+  server.publish('v1.1.0');
+  server.publish('v1.2.0', { omitRelinker: true });
+  const result = await updater.ensure();
+  assert.equal(result.runtime.tag, 'v1.1.0');
+  assert.match(result.note, /v1\.2\.0 has no relinker-v1\.2\.0/);
+  assert.match(result.note, /Using v1\.1\.0/);
+});
+
+test('an installed release is kept when the newest release is incomplete', async (t) => {
+  const { server, updater } = await setup();
+  t.after(() => server.close());
+  await updater.ensure();
+  server.publish('v1.1.0', { omitPrx: true });
+  const result = await updater.ensure();
+  assert.equal(result.status, 'current');
+  assert.equal(result.runtime.tag, 'v1.0.0');
+  assert.match(result.note, /v1\.1\.0 has no prx-linux-v1\.1\.0\.tar\.gz/);
+});
+
+test('names the missing files when no release is usable', async (t) => {
+  const { server, updater } = await setup();
+  t.after(() => server.close());
+  server.publish('v1.0.0', { omitRelinker: true });
+  await assert.rejects(updater.ensure(), /no release contains the files for this platform \(v1\.0\.0 has no relinker-v1\.0\.0\)/);
+});
+
+test('pre-releases are not used', async (t) => {
+  const { server, updater } = await setup();
+  t.after(() => server.close());
+  server.publish('v2.0.0-rc1', { prerelease: true });
+  const result = await updater.ensure();
+  assert.equal(result.runtime.tag, 'v1.0.0');
+});
+
+test('the Windows build downloads relinker-<tag>.exe and the windows libraries', async () => {
+  const server = await startReleaseServer({ platform: 'win32' });
+  const dir = tmp();
+  const updater = new Updater({ runtimeDir: path.join(dir, 'runtime'), platform: 'win32', apiBase: server.base, webBase: server.base });
+  try {
+    const result = await updater.ensure();
+    assert.equal(result.runtime.tag, 'v1.0.0');
+    assert.ok(fs.existsSync(path.join(result.runtime.dir, 'relinker.exe')));
+    assert.ok(server.state.hits.some((hit) => hit.endsWith('/v1.0.0/relinker-v1.0.0.exe')));
+    assert.ok(server.state.hits.some((hit) => hit.endsWith('/v1.0.0/prx-windows-v1.0.0.tar.gz')));
+  } finally {
+    await server.close();
+  }
+});

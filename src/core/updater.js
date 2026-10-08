@@ -32,6 +32,8 @@ function relinkerFileName(platform) {
   return platform === 'win32' ? 'relinker.exe' : 'relinker';
 }
 
+class NoUsableRelease extends Error {}
+
 class Updater {
   constructor({ runtimeDir, platform = process.platform, repo = REPO, apiBase = 'https://api.github.com', webBase = 'https://github.com', fetchImpl = globalThis.fetch, onStatus = () => {} }) {
     this.runtimeDir = runtimeDir;
@@ -66,6 +68,7 @@ class Updater {
     try {
       return await this.fetchLatestFromApi();
     } catch (apiError) {
+      if (apiError instanceof NoUsableRelease) throw apiError;
       try {
         return await this.fetchLatestFromRedirect();
       } catch (redirectError) {
@@ -75,22 +78,40 @@ class Updater {
   }
 
   async fetchLatestFromApi() {
-    const response = await this.fetch(`${this.apiBase}/repos/${this.repo}/releases/latest`, {
+    const response = await this.fetch(`${this.apiBase}/repos/${this.repo}/releases?per_page=10`, {
       headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'anyps5-launcher' },
       signal: AbortSignal.timeout(15000),
     });
     if (!response.ok) throw new Error(`release API answered ${response.status}`);
-    const body = await response.json();
-    const tag = assertTag(body.tag_name);
-    const names = assetNames(tag, this.platform);
-    const assets = {};
-    for (const [key, name] of Object.entries(names)) {
-      const asset = (body.assets ?? []).find((item) => item.name === name);
-      if (!asset) throw new Error(`release ${tag} has no asset ${name}`);
-      const digest = typeof asset.digest === 'string' && asset.digest.startsWith('sha256:') ? asset.digest.slice(7) : undefined;
-      assets[key] = { name, size: asset.size, sha256: digest };
+    const releases = await response.json();
+    if (!Array.isArray(releases)) throw new Error('release API returned an unexpected answer');
+    const skipped = [];
+    for (const release of releases) {
+      if (release.draft || release.prerelease) continue;
+      let tag;
+      try {
+        tag = assertTag(release.tag_name);
+      } catch {
+        continue;
+      }
+      const assets = {};
+      const missing = [];
+      for (const [key, name] of Object.entries(assetNames(tag, this.platform))) {
+        const asset = (release.assets ?? []).find((item) => item.name === name);
+        if (!asset) {
+          missing.push(name);
+          continue;
+        }
+        const digest = typeof asset.digest === 'string' && asset.digest.startsWith('sha256:') ? asset.digest.slice(7) : undefined;
+        assets[key] = { name, size: asset.size, sha256: digest };
+      }
+      if (missing.length === 0) {
+        const note = skipped.length ? `Newer release(s) skipped: ${skipped.join('; ')}. Using ${tag}.` : undefined;
+        return { tag, assets, note };
+      }
+      skipped.push(`${tag} has no ${missing.join(' and ')}`);
     }
-    return { tag, assets };
+    throw new NoUsableRelease(skipped.length ? `no release contains the files for this platform (${skipped.join('; ')})` : 'no published release found');
   }
 
   async fetchLatestFromRedirect() {
@@ -209,7 +230,7 @@ class Updater {
     }
     if (before && before.tag === latest.tag) {
       this.onStatus({ phase: 'current', tag: latest.tag });
-      return { status: 'current', runtime: before };
+      return { status: 'current', runtime: before, note: latest.note };
     }
     try {
       await this.install(latest);
@@ -219,7 +240,7 @@ class Updater {
     }
     const runtime = await this.installed();
     this.onStatus({ phase: 'updated', tag: latest.tag, previous: before?.tag });
-    return { status: 'updated', runtime, previous: before?.tag };
+    return { status: 'updated', runtime, previous: before?.tag, note: latest.note };
   }
 }
 
