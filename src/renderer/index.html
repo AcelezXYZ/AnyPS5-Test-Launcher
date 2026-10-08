@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'self'; script-src 'self'">
+  <title>AnyPS5 Launcher</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AnyPS5 <span>Launcher</span></div>
+    <div id="runtime" class="runtime" role="status" aria-live="polite"></div>
+    <div class="actions">
+      <button id="add-root" class="ghost" data-i18n="addFolder"></button>
+      <button id="rescan" class="ghost" data-i18n="rescan"></button>
+      <button id="open-settings" class="ghost" data-i18n="settings"></button>
+    </div>
+  </header>
+
+  <div id="app-update" class="appupdate" hidden>
+    <span id="app-update-text"></span>
+    <button id="app-update-install" class="primary small" hidden data-i18n="restartUpdate"></button>
+  </div>
+
+  <main>
+    <div id="notice" class="notice" hidden></div>
+    <section id="empty" class="empty" hidden>
+      <h2 data-i18n="emptyTitle"></h2>
+      <p data-i18n="emptyText"></p>
+      <button id="empty-add" class="primary" data-i18n="addFolder"></button>
+    </section>
+    <section id="grid" class="grid" aria-label="Library"></section>
+  </main>
+
+  <section class="logbar" id="logbar">
+    <button id="log-toggle" class="logtoggle" aria-expanded="false"><span data-i18n="log"></span> <span id="log-count"></span></button>
+    <div class="logbody" id="log-body" hidden>
+      <div class="logtools">
+        <button id="log-clear" class="ghost small" data-i18n="clearLog"></button>
+      </div>
+      <pre id="log" tabindex="0"></pre>
+    </div>
+  </section>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" id="settings-form">
+      <h2 data-i18n="settings"></h2>
+
+      <label class="row check">
+        <input type="checkbox" id="set-autoUpdate">
+        <span><strong data-i18n="autoUpdate"></strong><small data-i18n="autoUpdateHint"></small></span>
+      </label>
+
+      <label class="row">
+        <span><strong data-i18n="resourceMode"></strong><small data-i18n="resourceModeHint"></small></span>
+        <select id="set-resourceMode">
+          <option value="copy" data-i18n="modeCopy"></option>
+          <option value="link" data-i18n="modeLink"></option>
+        </select>
+      </label>
+
+      <label class="row">
+        <span><strong data-i18n="toIntel"></strong><small data-i18n="toIntelHint"></small></span>
+        <select id="set-toIntel">
+          <option value="auto" data-i18n="auto"></option>
+          <option value="on" data-i18n="on"></option>
+          <option value="off" data-i18n="off"></option>
+        </select>
+      </label>
+
+      <label class="row">
+        <span><strong data-i18n="unusedFilter"></strong><small data-i18n="unusedFilterHint"></small></span>
+        <select id="set-unusedFilter">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+        </select>
+      </label>
+
+      <label class="row">
+        <span><strong data-i18n="gpu"></strong><small data-i18n="gpuHint"></small></span>
+        <input type="text" id="set-gpu" list="gpu-list" autocomplete="off" spellcheck="false">
+        <datalist id="gpu-list"></datalist>
+      </label>
+
+      <div class="row column">
+        <strong data-i18n="folders"></strong>
+        <ul id="roots" class="roots"></ul>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" id="check-update" class="ghost" data-i18n="checkUpdate"></button>
+        <span id="app-version" class="version"></span>
+        <button value="close" class="primary" data-i18n="close"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

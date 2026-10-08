@@ -1,0 +1,83 @@
+{
+  "name": "anyps5-demo-launcher",
+  "version": "0.1.0",
+  "description": "Game library and one-click launcher for the AnyPS5 relinker",
+  "main": "src/main.js",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"test/*.test.js\"",
+    "test:integration": "node --test \"test/integration/*.test.js\"",
+    "dist": "electron-builder",
+    "dist:dir": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "homepage": "https://github.com/NilsLaurinEbeling/AnyPS5-Demo-Launcher",
+  "author": {
+    "name": "Nils Laurin Ebeling",
+    "email": "nilslaurinebeling@icloud.com"
+  },
+  "build": {
+    "appId": "dev.anyps5.launcher",
+    "productName": "AnyPS5 Launcher",
+    "artifactName": "AnyPS5-Launcher-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!src/devtools.js"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "NilsLaurinEbeling",
+        "repo": "AnyPS5-Demo-Launcher",
+        "releaseType": "release"
+      }
+    ],
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Game",
+      "icon": "icon.png",
+      "synopsis": "Game library and launcher for AnyPS5",
+      "syncDesktopName": true
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "desktopName": "anyps5-demo-launcher.desktop"
+}
