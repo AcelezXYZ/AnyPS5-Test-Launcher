@@ -1,6 +1,6 @@
 # AnyPS5 Launcher
 
-Repository: **AnyPS5-Demo-Launcher**. English only.
+Repository: **AnyPS5-Test-Launcher**. English only.
 
 A small desktop app (Electron) that gives [AnyPS5](https://github.com/boykopovar/AnyPS5) a game library: pick a game, press **Play**.
 
